@@ -1,0 +1,53 @@
+body {
+    font: 15px/1.5 'Helvetica Neue', Arial, sans-serif;
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-size: 200%;
+}
+
+h2 {
+    font-size: 120%;
+}
+
+p {
+    #margin: .5em 0;
+}
+a {
+    color: #a00;
+    text-decoration: none;
+}
+a:hover, a:focus {
+    text-decoration: underline;
+}
+#hr { border: solid #ddd; border-width: 2px 0 0; clear: both; height: 0;}
+.version {
+    text-align: right;
+    font-size: 11px;
+}
+#search {
+    width: 100%;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+.content {
+    overflow: auto;
+}
+.movie #poster {
+    max-width: 100%;
+}
+.movie #title,
+.movie #year {
+    font-size: 20px;
+}
+#results_container {
+    display: none;
+}
+#movie_container {
+    display: none;
+}
+#download_container {
+    display: none;
+}

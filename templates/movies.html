@@ -1,0 +1,47 @@
+{{ template "header" }}
+    <div class="three columns sidebar">
+        {{ template "sidebar" }}
+    </div>
+
+    <script src="js/movies.js"></script>
+
+    <div class="thirteen columns content">
+
+        <p>Search for a movie</p>
+        <input type="text" id="search" name="search">
+
+        <div id="results_container">
+            <p>Results:</p>
+            <span id="search_error"></span>
+            <div id="results"></div>
+        </div>
+        
+        <div id="movie_container">
+        <p>Movie information:</p>
+            <div class="movie">
+                    <div class="three columns">
+                        <img id="poster" src="img/no_poster.gif" alt="movie_poster"/>
+                    </div>
+                    <div class="nine columns">
+                        <span id="title"></span> <span id="year"></span>
+                        <p>
+                            Release: <span id="release"></span><br>
+                            Runtime: <span id="runtime"></span><br>
+                            Genre: <span id="genre"></span><br>
+                            Rating: <span id="rating"></span>
+                        </p>
+                        <p>Synopsis: <span id="synopsis"></span></p>
+                        <p>IMDb ID: <span id="imdb"></span><br>
+                        IMDb Rating: <span id="imdb_rating"></span></p>
+                    </div>
+            </div>
+        </div>
+
+        <br class="clear">
+
+        <div id="download_container">
+            <p>Download information:</p>        
+            <div id="download"></div>
+        </div>
+    </div>
+{{ template "footer" }}
