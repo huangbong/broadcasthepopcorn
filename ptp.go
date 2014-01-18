@@ -57,17 +57,22 @@ func (p *PTP) Login() error {
     if err != nil {
         return err
     }
+
     client := &http.Client{ Jar: p.cookiejar }
-    postData := url.Values { "username": {p.username}, "password": {p.password}, "passkey": {p.passkey}, "keeplogged": {"1"} }
-    resp, err := client.PostForm(ptp_endpoint + "/ajax.php?action=login", postData)
+    postData := url.Values { "username": {p.username}, 
+    "password": {p.password}, "passkey": {p.passkey}, "keeplogged": {"1"} }
+    resp, err := client.PostForm(ptp_endpoint + "/ajax.php?action=login", 
+        postData)
     if err != nil {
         return err
     }
     defer resp.Body.Close()
+
     contents, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         return err
     }
+
     var result loginResult
     if err := json.Unmarshal(contents, &result); err != nil {
         return err
@@ -81,12 +86,14 @@ func (p *PTP) Login() error {
 func (p *PTP) Get(imdbID string) (string, error) {
     client := &http.Client { Jar: p.cookiejar }
     queryValues := url.Values { "imdb": {imdbID}, "json": {"1"} }
-    req, err := http.NewRequest("GET", ptp_endpoint + "/torrents.php?" + queryValues.Encode(), nil)
+    req, err := http.NewRequest("GET", ptp_endpoint + "/torrents.php?" + 
+        queryValues.Encode(), nil)
     resp, err := client.Do(req)
     if err != nil {
         return "", err
     }
     defer resp.Body.Close()
+
     contents, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         return "", err

@@ -11,6 +11,7 @@ import (
     "os/signal"
     "syscall"
     "log"
+    "errors"
     "net/http"
     "html/template"
     "github.com/gorilla/mux"
@@ -47,12 +48,12 @@ func main() {
 
     // route dynamic URLs
     r := mux.NewRouter()
-    r.Handle("/", appHandler(index))
-    r.Handle("/movies", appHandler(movies))
+    r.Handle("/", appHandler(index_view))
+    r.Handle("/movies", appHandler(movies_view))
     ptp = NewPTP(ptp_username, ptp_password, ptp_passkey)
     cache = NewImageCache(cache_dir)
     r.Handle("/ptp", appHandler(ptp_view))
-    r.Handle("/image", appHandler(image))
+    r.Handle("/image", appHandler(image_view))
 
     // serve static files
     http.Handle("/css/", http.FileServer(http.Dir("static")))
@@ -67,35 +68,20 @@ func main() {
     http.ListenAndServe(":8000", nil)
 }
 
-func index(w http.ResponseWriter, r *http.Request) *appError {
+func index_view(w http.ResponseWriter, r *http.Request) *appError {
     return viewTemplate("index.html", w)
 }
 
-func movies(w http.ResponseWriter, r *http.Request) *appError {
+func movies_view(w http.ResponseWriter, r *http.Request) *appError {
     return viewTemplate("movies.html", w)
 }
 
-func viewTemplate(filename string, w http.ResponseWriter) *appError {
-    t := template.New(filename)
-    parse, err := t.ParseGlob("templates/*.html")
-    if err != nil {
-        return &appError{ err, "Template files not found.", 404 }
-    }
-    t = template.Must(parse, err)
-    if err := t.Execute(w, nil); err != nil {
-        return &appError{ err, "Could not load templates.", 500 }
-    }
-    return nil   
-}
 
 func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
-    if err := r.ParseForm(); err != nil {
-        return &appError{ err, "Could not parse form.", 500 }
+    imdbID, err := checkQuery("imdbID", r)
+    if err != nil {
+        return &appError{ err, "No URL argument passed.", 500}
     }
-    if len(r.Form["imdbID"]) == 0 {
-        return &appError{ nil, "No URL argument passed.", 500 }
-    }
-    imdbID := r.Form["imdbID"][0]
     if logged_in, _ := ptp.CheckLogin(); logged_in == false {
         if err := ptp.Login(); err != nil {
             return &appError{ err, "Could not login to PTP.", 500}
@@ -109,20 +95,41 @@ func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
     return nil
 }
 
-func image(w http.ResponseWriter, r *http.Request) *appError {
-    if err := r.ParseForm(); err != nil {
-        return &appError{ err, "Could not parse form.", 500 }
+func image_view(w http.ResponseWriter, r *http.Request) *appError {
+    url, err := checkQuery("url", r)
+    if err != nil {
+        return &appError{ err, "No URL argument passed.", 500}
     }
-    if len(r.Form["url"]) == 0 {
-        return &appError{ nil, "No URL argument passed.", 500 }
-    }
-    url := r.Form["url"][0]
     if i, err := cache.Get(url); err != nil {
         return &appError{ err, "Could not cache image.", 500 }
     } else {
         w.Write(i)
     }
     return nil
+}
+
+func viewTemplate(filename string, w http.ResponseWriter) *appError {
+    t := template.New(filename)
+    parse, err := t.ParseGlob("templates/*.html")
+    if err != nil {
+        return &appError{ err, "Template files not found.", 404 }
+    }
+    t = template.Must(parse, err)
+    if err := t.Execute(w, nil); err != nil {
+        return &appError{ err, "Could not load templates.", 500 }
+    }
+    return nil
+}
+
+func checkQuery(field string, r *http.Request) (string, error) {
+    if err := r.ParseForm(); err != nil {
+        return "", err
+    }
+    if len(r.Form[field]) == 0 {
+        return "", errors.New("Error")
+    }
+    query := r.Form[field][0]
+    return query, nil
 }
 
 func watch() {
