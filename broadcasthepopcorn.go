@@ -6,6 +6,7 @@
 package main
 
 import (
+    "fmt"
     "os"
     "os/signal"
     "syscall"
@@ -16,7 +17,10 @@ import (
 )
 
 const (
-    cacheDir = "_cache"
+    cache_dir = "_cache"
+    ptp_username = ""
+    ptp_password = ""
+    ptp_passkey = ""
 )
 
 type appError struct {
@@ -35,6 +39,7 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 var cache Cache
+var ptp PTP
 
 func main() {
     // watch for SIGTERM
@@ -44,7 +49,9 @@ func main() {
     r := mux.NewRouter()
     r.Handle("/", appHandler(index))
     r.Handle("/movies", appHandler(movies))
-    cache = NewImageCache(cacheDir)
+    ptp = NewPTP(ptp_username, ptp_password, ptp_passkey)
+    cache = NewImageCache(cache_dir)
+    r.Handle("/ptp", appHandler(ptp_view))
     r.Handle("/image", appHandler(image))
 
     // serve static files
@@ -81,6 +88,27 @@ func viewTemplate(filename string, w http.ResponseWriter) *appError {
     return nil   
 }
 
+func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
+    if err := r.ParseForm(); err != nil {
+        return &appError{ err, "Could not parse form.", 500 }
+    }
+    if len(r.Form["imdbID"]) == 0 {
+        return &appError{ nil, "No URL argument passed.", 500 }
+    }
+    imdbID := r.Form["imdbID"][0]
+    if logged_in, _ := ptp.CheckLogin(); logged_in == false {
+        if err := ptp.Login(); err != nil {
+            return &appError{ err, "Could not login to PTP.", 500}
+        }
+    }
+    results, err := ptp.Get(imdbID)
+    if err != nil {
+        return &appError{ err, "Could not retrieve movie information.", 500}
+    }
+    fmt.Fprintf(w, results)
+    return nil
+}
+
 func image(w http.ResponseWriter, r *http.Request) *appError {
     if err := r.ParseForm(); err != nil {
         return &appError{ err, "Could not parse form.", 500 }
@@ -102,10 +130,10 @@ func watch() {
     signal.Notify(c, os.Interrupt)
     signal.Notify(c, syscall.SIGTERM)
     <-c
-    if err := os.RemoveAll(cacheDir); err != nil {
+    if err := os.RemoveAll(cache_dir); err != nil {
      log.Fatal(err)
     } else {
-     log.Println("Successfully closed")
+     log.Println("Successfully closed.")
      os.Exit(0)
     }
 }
