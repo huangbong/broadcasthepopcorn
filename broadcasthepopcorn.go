@@ -6,7 +6,6 @@
 package main
 
 import (
-    "fmt"
     "os"
     "os/signal"
     "syscall"
@@ -78,6 +77,7 @@ func movies_view(w http.ResponseWriter, r *http.Request) *appError {
 
 
 func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
+    w.Header().Set("Content-Type", "application/json")
     imdbID, err := checkQuery("imdbID", r)
     if err != nil {
         return &appError{ err, "No URL argument passed.", 500}
@@ -87,11 +87,11 @@ func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
             return &appError{ err, "Could not login to PTP.", 500}
         }
     }
-    results, err := ptp.Get(imdbID)
+    json, err := ptp.Get(imdbID)
     if err != nil {
         return &appError{ err, "Could not retrieve movie information.", 500}
     }
-    fmt.Fprintf(w, results)
+    w.Write(json)
     return nil
 }
 

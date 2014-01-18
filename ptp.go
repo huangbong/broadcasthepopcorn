@@ -6,6 +6,7 @@
 package main
 
 import (
+    "strings"
     "errors"
     "net/url"
     "net/http"
@@ -20,7 +21,7 @@ const (
 )
 
 type PTP struct {
-    username, password, passkey string
+    username, password, passkey, authkey string
     cookiejar http.CookieJar
 }
 
@@ -83,20 +84,26 @@ func (p *PTP) Login() error {
     return nil
 }
 
-func (p *PTP) Get(imdbID string) (string, error) {
+func (p *PTP) Get(imdbID string) ([]byte, error) {
     client := &http.Client { Jar: p.cookiejar }
     queryValues := url.Values { "imdb": {imdbID}, "json": {"1"} }
     req, err := http.NewRequest("GET", ptp_endpoint + "/torrents.php?" + 
         queryValues.Encode(), nil)
+    //req, err := http.NewRequest("GET", "http://paste.ee/r/xIeue", nil)
     resp, err := client.Do(req)
     if err != nil {
-        return "", err
+        return nil, err
     }
     defer resp.Body.Close()
 
     contents, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-        return "", err
+        return nil, err
     }
-    return string(contents), nil
+
+    if strings.Contains(string(contents), "html") {
+        contents = []byte("{ \"Result\": \"Not found\" }")
+    }
+
+    return contents, nil
 }

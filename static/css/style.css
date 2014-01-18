@@ -51,3 +51,15 @@ a:hover, a:focus {
 #download_container {
     display: none;
 }
+#download table {
+    width: 100%;
+}
+#download table th {
+    text-align: left;
+}
+.grayrow {
+    background-color: #F0F0F0;
+}
+.goldenpopcorn {
+    color: #FFD700;
+}

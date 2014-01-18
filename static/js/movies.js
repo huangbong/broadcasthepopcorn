@@ -108,8 +108,66 @@ $(document).ready(function() {
     }
 
     function getDownload(data) {
-        $('#download_container').show();        
-        $('#download').html('Fetching download information from PTP... ' 
-            + data + '...');
+        $.ajax({
+            url: "ptp?imdbID=" + imdbID,
+            datatype: "json",
+            success: function(data) {
+                showDownload(data);
+            }
+        })        
+    }
+
+    function bytesToSize(bytes) {
+        var sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB'];
+        if (bytes == 0) return '0 Bytes';
+        var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+        return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+    };
+
+    function showDownload(data) {
+        $('#download_container').show();
+        if (data['Result'] == "OK") {
+            var r = new Array(), j = -1;
+            r[++j] = '<table>';
+            r[++j] = '<tr><th>ID</th><th>Torrents</th><th>Size</th><th>Snatched</th> \
+            <th>Seeders</th><th>Leechers</th></tr>';
+            for (var key=0, size=data['Torrents'].length; key < size; key++) {
+                if (key % 2 == 1) {
+                    r[++j] = '<tr class="grayrow">';
+                } else {
+                    r[++j] = '<tr>';
+                }
+                r[++j] = '<td class="id">';
+                r[++j] = data['Torrents'][key]['Id'];
+                r[++j] = '</td><td class="torrents">';
+                r[++j] = data['Torrents'][key]['Codec'];
+                r[++j] = " / ";
+                r[++j] = data['Torrents'][key]['Container'];
+                r[++j] = " / ";
+                r[++j] = data['Torrents'][key]['Source'];
+                r[++j] = " / ";
+                r[++j] = data['Torrents'][key]['Resolution'];
+                if (data['Torrents'][key]['Scene']) {
+                    r[++j] = " / "
+                    r[++j] = "Scene";
+                }
+                if (data['Torrents'][key]['GoldenPopcorn']) {
+                    r[++j] = ' <span class="goldenpopcorn">*</span>';
+                }
+                r[++j] = '</td><td class="size">';
+                r[++j] = bytesToSize(data['Torrents'][key]['Size']);
+                r[++j] = '</td><td class="snatched">';
+                r[++j] = data['Torrents'][key]['Snatched'];
+                r[++j] = '</td><td class="seeders">';
+                r[++j] = data['Torrents'][key]['Seeders'];
+                r[++j] = '</td><td class="leechers">';
+                r[++j] = data['Torrents'][key]['Leechers'];
+                r[++j] = '</td></tr>';
+            }
+            r[++j] = '</table>';
+            $('#download').html(r.join(''));
+        } else {
+            $('#download').html("Movie not available on PTP.");
+        }
     }
 });
