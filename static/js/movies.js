@@ -167,7 +167,7 @@ $(document).ready(function() {
             r[++j] = '</table>';
             $('#download').html(r.join(''));
         } else {
-            $('#download').html("Movie not available on PTP.");
+            $('#download').html(data['Result']);
         }
     }
 });

@@ -6,6 +6,7 @@
 package main
 
 import (
+    "fmt"
     "os"
     "os/signal"
     "syscall"
@@ -26,7 +27,6 @@ const (
 type appError struct {
     Error error
     Message string
-    Code int
 }
 
 type appHandler func(http.ResponseWriter, *http.Request) *appError
@@ -34,7 +34,8 @@ type appHandler func(http.ResponseWriter, *http.Request) *appError
 func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     if e := fn(w, r); e != nil {
         log.Println(e.Error)
-        http.Error(w, e.Message, e.Code)
+        w.Header().Set("Content-Type", "application/json")
+        w.Write([]byte(e.Message));
     }
 }
 
@@ -75,21 +76,25 @@ func movies_view(w http.ResponseWriter, r *http.Request) *appError {
     return viewTemplate("movies.html", w)
 }
 
+func jsonResult(s string) (string) {
+    json := fmt.Sprintf("{\"Result\":\"%s\"}", s)
+    return json
+}
 
 func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
     w.Header().Set("Content-Type", "application/json")
     imdbID, err := checkQuery("imdbID", r)
     if err != nil {
-        return &appError{ err, "No URL argument passed.", 500}
+        return &appError{ err, jsonResult("No URL argument passed.") }
     }
     if logged_in, _ := ptp.CheckLogin(); logged_in == false {
         if err := ptp.Login(); err != nil {
-            return &appError{ err, "Could not login to PTP.", 500}
+            return &appError{ err, jsonResult("Could not login to PTP.") }
         }
     }
     json, err := ptp.Get(imdbID)
     if err != nil {
-        return &appError{ err, "Could not retrieve movie information.", 500}
+        return &appError{ err, jsonResult("Could not retrieve movie information.") }
     }
     w.Write(json)
     return nil
@@ -98,10 +103,10 @@ func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
 func image_view(w http.ResponseWriter, r *http.Request) *appError {
     url, err := checkQuery("url", r)
     if err != nil {
-        return &appError{ err, "No URL argument passed.", 500}
+        return &appError{ err, jsonResult("No URL argument passed.") }
     }
     if i, err := cache.Get(url); err != nil {
-        return &appError{ err, "Could not cache image.", 500 }
+        return &appError{ err, jsonResult("Could not cache image.") }
     } else {
         w.Write(i)
     }
@@ -112,11 +117,11 @@ func viewTemplate(filename string, w http.ResponseWriter) *appError {
     t := template.New(filename)
     parse, err := t.ParseGlob("templates/*.html")
     if err != nil {
-        return &appError{ err, "Template files not found.", 404 }
+        return &appError{ err, jsonResult("Template files not found.") }
     }
     t = template.Must(parse, err)
     if err := t.Execute(w, nil); err != nil {
-        return &appError{ err, "Could not load templates.", 500 }
+        return &appError{ err, jsonResult("Could not load templates.") }
     }
     return nil
 }

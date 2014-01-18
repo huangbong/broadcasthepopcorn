@@ -89,7 +89,6 @@ func (p *PTP) Get(imdbID string) ([]byte, error) {
     queryValues := url.Values { "imdb": {imdbID}, "json": {"1"} }
     req, err := http.NewRequest("GET", ptp_endpoint + "/torrents.php?" + 
         queryValues.Encode(), nil)
-    //req, err := http.NewRequest("GET", "http://paste.ee/r/xIeue", nil)
     resp, err := client.Do(req)
     if err != nil {
         return nil, err
@@ -102,7 +101,7 @@ func (p *PTP) Get(imdbID string) ([]byte, error) {
     }
 
     if strings.Contains(string(contents), "html") {
-        contents = []byte("{ \"Result\": \"Not found\" }")
+        contents = []byte("{\"Result\":\"Movie not found on PTP.\"}")
     }
 
     return contents, nil
