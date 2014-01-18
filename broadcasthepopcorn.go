@@ -16,49 +16,88 @@ import (
 )
 
 const (
-    cacheDir = "cache"
+    cacheDir = "_cache"
 )
 
-var cache ImageCache
+type appError struct {
+    Error error
+    Message string
+    Code int
+}
+
+type appHandler func(http.ResponseWriter, *http.Request) *appError
+
+func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    if e := fn(w, r); e != nil {
+        log.Println(e.Error)
+        http.Error(w, e.Message, e.Code)
+    }
+}
+
+var cache Cache
 
 func main() {
-    go Watch()
+    // watch for SIGTERM
+    go watch()
+
+    // route dynamic URLs
     r := mux.NewRouter()
-    r.HandleFunc("/", Index)
-    r.HandleFunc("/movies", Movies)
-    cache = NewImageCacheStore(cacheDir)
-    r.HandleFunc("/image", Image)
-    http.Handle("/", r)
+    r.Handle("/", appHandler(index))
+    r.Handle("/movies", appHandler(movies))
+    cache = NewImageCache(cacheDir)
+    r.Handle("/image", appHandler(image))
+
+    // serve static files
     http.Handle("/css/", http.FileServer(http.Dir("static")))
     http.Handle("/js/", http.FileServer(http.Dir("static")))
     http.Handle("/img/", http.FileServer(http.Dir("static")))
     http.Handle("/cache/", http.FileServer(http.Dir(".")))
+
+    // route gorilla/mux
+    http.Handle("/", r)
+
+    // run HTTP server
     http.ListenAndServe(":8000", nil)
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-    t := template.New("index.html")
-    t = template.Must(t.ParseGlob("templates/*.html"))
-    t.Execute(w, nil)
+func index(w http.ResponseWriter, r *http.Request) *appError {
+    return viewTemplate("index.html", w)
 }
 
-func Movies(w http.ResponseWriter, r *http.Request) {
-    t := template.New("movies.html")
-    t = template.Must(t.ParseGlob("templates/*.html"))
-    t.Execute(w, nil)
+func movies(w http.ResponseWriter, r *http.Request) *appError {
+    return viewTemplate("movies.html", w)
 }
 
-func Image(w http.ResponseWriter, r *http.Request) {
-    err := r.ParseForm()
-    url := r.Form["url"][0]
+func viewTemplate(filename string, w http.ResponseWriter) *appError {
+    t := template.New(filename)
+    parse, err := t.ParseGlob("templates/*.html")
     if err != nil {
-        log.Println(err)
+        return &appError{ err, "Template files not found.", 404 }
     }
-    i := cache.Get(&url)
-    w.Write(i)
+    t = template.Must(parse, err)
+    if err := t.Execute(w, nil); err != nil {
+        return &appError{ err, "Could not load templates.", 500 }
+    }
+    return nil   
 }
 
-func Watch() {
+func image(w http.ResponseWriter, r *http.Request) *appError {
+    if err := r.ParseForm(); err != nil {
+        return &appError{ err, "Could not parse form.", 500 }
+    }
+    if len(r.Form["url"]) == 0 {
+        return &appError{ nil, "No URL argument passed.", 500 }
+    }
+    url := r.Form["url"][0]
+    if i, err := cache.Get(url); err != nil {
+        return &appError{ err, "Could not cache image.", 500 }
+    } else {
+        w.Write(i)
+    }
+    return nil
+}
+
+func watch() {
     c := make(chan os.Signal, 1)
     signal.Notify(c, os.Interrupt)
     signal.Notify(c, syscall.SIGTERM)
