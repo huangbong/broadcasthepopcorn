@@ -131,11 +131,22 @@ $(document).ready(function() {
             r[++j] = '<table>';
             r[++j] = '<tr><th>ID</th><th>Torrents</th><th>Size</th><th>Snatched</th> \
             <th>Seeders</th><th>Leechers</th></tr>';
+            var quality;
             for (var key=0, size=data['Torrents'].length; key < size; key++) {
-                if (key % 2 == 1) {
-                    r[++j] = '<tr class="grayrow">';
+                if (data['Torrents'][key]['Quality'] != quality) {
+                    r[++j] = '<tr class="border_bottom"><td colspan="6" class="quality">';
+                    r[++j] = data['Torrents'][key]['Quality'];
+                    r[++j] = '</td></tr>';
+                    quality = data['Torrents'][key]['Quality'];
+                }
+                if(data['Torrents'][key]['Recommended']) {
+                    r[++j] = '<tr class="recommended">';
                 } else {
-                    r[++j] = '<tr>';
+                    if (key % 2 == 1) {
+                        r[++j] = '<tr class="grayrow">';
+                    } else {
+                        r[++j] = '<tr>';
+                    }
                 }
                 r[++j] = '<td class="id">';
                 r[++j] = data['Torrents'][key]['Id'];

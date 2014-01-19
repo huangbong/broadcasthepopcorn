@@ -6,6 +6,7 @@
 package main
 
 import (
+    //"fmt"
     "strings"
     "errors"
     "net/url"
@@ -14,10 +15,13 @@ import (
     "code.google.com/p/go.net/publicsuffix"
     "io/ioutil"
     "encoding/json"
+    "strconv"
 )
 
 const (
     ptp_endpoint = "https://tls.passthepopcorn.me"
+    movie_source = ""
+    movie_resolution = ""
 )
 
 type PTP struct {
@@ -29,6 +33,35 @@ type loginResult struct {
     Result string
 }
 
+type ptpJSON struct {
+    Page     string
+    Result   string
+    GroupId  string
+    AuthKey  string
+    PassKey  string
+    ImdbID   string
+    Torrents []ptpTorrent
+}
+
+type ptpTorrent struct {
+    Id            string
+    Quality       string
+    Source        string
+    Container     string
+    Codec         string
+    Resolution    string
+    Size          string
+    Scene         bool
+    UploadTime    string
+    Snatched      string
+    Seeders       string
+    Leechers      string
+    ReleasName    string
+    Checked       bool
+    GoldenPopcorn bool
+    Recommended   bool
+}
+
 func NewPTP(username, password, passkey string) PTP {
     ptp := PTP { 
         username: username,
@@ -37,6 +70,8 @@ func NewPTP(username, password, passkey string) PTP {
     }
     return ptp
 }
+
+// Check PTP.cookiejar to see if we have already logged in.
 
 func (p *PTP) CheckLogin() (bool, error) {
     ptp_url, err := url.Parse(ptp_endpoint)
@@ -48,6 +83,8 @@ func (p *PTP) CheckLogin() (bool, error) {
     }
     return true, nil
 }
+
+// Login to PTP and save cookie in cookiejar.
 
 func (p *PTP) Login() error {
     options := cookiejar.Options {
@@ -84,6 +121,8 @@ func (p *PTP) Login() error {
     return nil
 }
 
+// Get PTP JSON search result from imdbID.
+
 func (p *PTP) Get(imdbID string) ([]byte, error) {
     client := &http.Client { Jar: p.cookiejar }
     queryValues := url.Values { "imdb": {imdbID}, "json": {"1"} }
@@ -95,6 +134,7 @@ func (p *PTP) Get(imdbID string) ([]byte, error) {
     }
     defer resp.Body.Close()
 
+
     contents, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         return nil, err
@@ -102,7 +142,86 @@ func (p *PTP) Get(imdbID string) ([]byte, error) {
 
     if strings.Contains(string(contents), "html") {
         contents = []byte("{\"Result\":\"Movie not found on PTP.\"}")
+        return contents, nil
     }
 
-    return contents, nil
+    var default_response ptpJSON
+    if err := json.Unmarshal(contents, &default_response); err != nil {
+        return nil, err
+    }
+
+    var rank ptpJSON
+    if err := json.Unmarshal(contents, &rank); err != nil {
+        return nil, err
+    }
+
+    p.Recommend(&default_response, &rank)
+
+    response_byte, _ := json.Marshal(default_response)
+
+    return response_byte, nil
+}
+
+
+// Determine recommended torrent to download.
+// Very simple/broken algorithm at this point.
+
+func (p *PTP) Recommend(default_response, rank *ptpJSON) {
+    // re-order rank (type ptpJSON) by most snatched
+
+    for i := 0; i < len(rank.Torrents); i++ {
+        max, _ := strconv.Atoi(rank.Torrents[i].Snatched)
+        max_id := i
+        for j := i + 1; j < len(rank.Torrents); j++ {
+            if val, _ := strconv.Atoi(rank.Torrents[j].Snatched); val > max {
+                max, _ = strconv.Atoi(rank.Torrents[j].Snatched)
+                max_id = j
+            }
+        }
+        rank.Torrents[i], rank.Torrents[max_id] = 
+        rank.Torrents[max_id], rank.Torrents[i]
+    }
+
+    var recommendedID string
+
+    // perfect match
+
+    if recommendedID == "" {
+        for i := 0; i < len(rank.Torrents); i++ {
+            t := rank.Torrents[i]
+            if t.Source == movie_source && 
+            t.Resolution == movie_resolution {
+                recommendedID = t.Id
+                break
+            }
+        }
+    }
+
+    // ignore source
+
+    if recommendedID == "" {
+        for i := 0; i < len(rank.Torrents); i++ {
+            t := rank.Torrents[i]
+            if t.Resolution == movie_resolution {
+                recommendedID = t.Id
+                break
+            }
+        }
+    }
+
+    // ignore everything, recommend most snatched
+
+    if recommendedID == "" {
+        for i := 0; i < len(rank.Torrents); i++ {
+            t := rank.Torrents[i]
+            recommendedID = t.Id
+            break
+        }
+    }
+
+    for i := 0; i < len(default_response.Torrents); i++ {
+        if default_response.Torrents[i].Id == recommendedID {
+            default_response.Torrents[i].Recommended = true
+        }
+    }
 }

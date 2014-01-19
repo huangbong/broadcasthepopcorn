@@ -18,7 +18,7 @@ import (
 )
 
 const (
-    cache_dir = "_cache"
+    cache_dir = ""
     ptp_username = ""
     ptp_password = ""
     ptp_passkey = ""

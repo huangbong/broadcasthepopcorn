@@ -21,7 +21,7 @@ a {
 a:hover, a:focus {
     text-decoration: underline;
 }
-#hr { border: solid #ddd; border-width: 2px 0 0; clear: both; height: 0;}
+#hr { border: solid #ddd; border-width: 2px 0 0; clear: both; height: 0; }
 .version {
     text-align: right;
     font-size: 11px;
@@ -57,9 +57,18 @@ a:hover, a:focus {
 #download table th {
     text-align: left;
 }
+tr.border_bottom td {
+  border-bottom:1pt solid black;
+}
+.quality {
+    font-weight: 800;
+}
 .grayrow {
     background-color: #F0F0F0;
 }
 .goldenpopcorn {
     color: #FFD700;
+}
+.recommended {
+    background-color: #7fbf4d;
 }
