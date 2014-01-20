@@ -31,6 +31,7 @@ $(document).ready(function() {
         $('#results_container').hide();
         $('#movie_container').hide();
         $('#download_container').hide();
+        $('#download_button').hide();
         $('#results').empty();
         $('#search_error').empty();
     }
@@ -109,7 +110,7 @@ $(document).ready(function() {
 
     function getDownload(data) {
         $.ajax({
-            url: "ptp?imdbID=" + imdbID,
+            url: "ptp_search?imdbID=" + imdbID,
             datatype: "json",
             success: function(data) {
                 showDownload(data);
@@ -126,6 +127,7 @@ $(document).ready(function() {
 
     function showDownload(data) {
         $('#download_container').show();
+        $('#download_button').hide();
         if (data['Result'] == "OK") {
             var r = new Array(), j = -1;
             r[++j] = '<table>';
@@ -177,8 +179,27 @@ $(document).ready(function() {
             }
             r[++j] = '</table>';
             $('#download').html(r.join(''));
+            showDownloadButton();
+
+            $('tr').click(function() {
+                $('tr.recommended').removeClass('recommended');
+                $(this).addClass('recommended');
+                showDownloadButton();
+            });
+
         } else {
             $('#download').html(data['Result']);
         }
+    }
+
+    function showDownloadButton() {
+        $('#download_button button').attr("disabled", false);
+        $('#download_button button').text('Download');
+        $('#download_button').show();
+        $('#download_button button').click(function() {
+            console.log($('.recommended .id').text());
+            $('#download_button button').attr("disabled", true);
+            $('#download_button button').text('Adding download ' + $('.recommended .id').text() + '...');
+        });
     }
 });

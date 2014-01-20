@@ -40,7 +40,7 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 var cache Cache
-var ptp PTP
+var ptp_search PTPSearch
 
 func main() {
     // watch for SIGTERM
@@ -50,9 +50,9 @@ func main() {
     r := mux.NewRouter()
     r.Handle("/", appHandler(index_view))
     r.Handle("/movies", appHandler(movies_view))
-    ptp = NewPTP(ptp_username, ptp_password, ptp_passkey)
+    ptp_search = NewPTP(ptp_username, ptp_password, ptp_passkey)
     cache = NewImageCache(cache_dir)
-    r.Handle("/ptp", appHandler(ptp_view))
+    r.Handle("/ptp_search", appHandler(ptp_search_view))
     r.Handle("/image", appHandler(image_view))
 
     // serve static files
@@ -81,18 +81,18 @@ func jsonResult(s string) (string) {
     return json
 }
 
-func ptp_view(w http.ResponseWriter, r *http.Request) *appError {
+func ptp_search_view(w http.ResponseWriter, r *http.Request) *appError {
     w.Header().Set("Content-Type", "application/json")
     imdbID, err := checkQuery("imdbID", r)
     if err != nil {
         return &appError{ err, jsonResult("No URL argument passed.") }
     }
-    if logged_in, _ := ptp.CheckLogin(); logged_in == false {
-        if err := ptp.Login(); err != nil {
+    if logged_in, _ := ptp_search.CheckLogin(); logged_in == false {
+        if err := ptp_search.Login(); err != nil {
             return &appError{ err, jsonResult("Could not login to PTP.") }
         }
     }
-    json, err := ptp.Get(imdbID)
+    json, err := ptp_search.Get(imdbID)
     if err != nil {
         return &appError{ err, jsonResult("Could not retrieve movie information.") }
     }

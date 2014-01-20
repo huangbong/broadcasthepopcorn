@@ -6,7 +6,6 @@
 package main
 
 import (
-    //"fmt"
     "strings"
     "errors"
     "net/url"
@@ -24,7 +23,7 @@ const (
     movie_resolution = ""
 )
 
-type PTP struct {
+type PTPSearch struct {
     username, password, passkey, authkey string
     cookiejar http.CookieJar
 }
@@ -62,8 +61,8 @@ type ptpTorrent struct {
     Recommended   bool
 }
 
-func NewPTP(username, password, passkey string) PTP {
-    ptp := PTP { 
+func NewPTP(username, password, passkey string) PTPSearch {
+    ptp := PTPSearch { 
         username: username,
         password: password,
         passkey: passkey,
@@ -71,9 +70,9 @@ func NewPTP(username, password, passkey string) PTP {
     return ptp
 }
 
-// Check PTP.cookiejar to see if we have already logged in.
+// Check PTPSearch.cookiejar to see if we have already logged in.
 
-func (p *PTP) CheckLogin() (bool, error) {
+func (p *PTPSearch) CheckLogin() (bool, error) {
     ptp_url, err := url.Parse(ptp_endpoint)
     if err != nil {
         return false, err
@@ -86,7 +85,7 @@ func (p *PTP) CheckLogin() (bool, error) {
 
 // Login to PTP and save cookie in cookiejar.
 
-func (p *PTP) Login() error {
+func (p *PTPSearch) Login() error {
     options := cookiejar.Options {
         PublicSuffixList: publicsuffix.List,
     }
@@ -123,7 +122,7 @@ func (p *PTP) Login() error {
 
 // Get PTP JSON search result from imdbID.
 
-func (p *PTP) Get(imdbID string) ([]byte, error) {
+func (p *PTPSearch) Get(imdbID string) ([]byte, error) {
     client := &http.Client { Jar: p.cookiejar }
     queryValues := url.Values { "imdb": {imdbID}, "json": {"1"} }
     req, err := http.NewRequest("GET", ptp_endpoint + "/torrents.php?" + 
@@ -166,7 +165,7 @@ func (p *PTP) Get(imdbID string) ([]byte, error) {
 // Determine recommended torrent to download.
 // Very simple/broken algorithm at this point.
 
-func (p *PTP) Recommend(default_response, rank *ptpJSON) {
+func (p *PTPSearch) Recommend(default_response, rank *ptpJSON) {
     // re-order rank (type ptpJSON) by most snatched
 
     for i := 0; i < len(rank.Torrents); i++ {

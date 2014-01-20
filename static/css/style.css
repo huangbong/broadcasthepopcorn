@@ -42,13 +42,10 @@ a:hover, a:focus {
 .movie #year {
     font-size: 20px;
 }
-#results_container {
-    display: none;
-}
-#movie_container {
-    display: none;
-}
-#download_container {
+#results_container,
+#movie_container,
+#download_container,
+#download_button {
     display: none;
 }
 #download table {
