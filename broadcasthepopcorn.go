@@ -134,7 +134,7 @@ func checkQuery(field string, r *http.Request) (string, error) {
 		return "", err
 	}
 	if len(r.Form[field]) == 0 {
-		return "", errors.New("Error")
+		return "", errors.New("No URL argument passed.")
 	}
 	query := r.Form[field][0]
 	return query, nil

@@ -31,33 +31,31 @@ type loginResult struct {
 	Result string
 }
 
-type ptpJSON struct {
-	Page     string
-	Result   string
-	GroupId  string
-	AuthKey  string
-	PassKey  string
-	ImdbID   string
-	Torrents []ptpTorrent
-}
-
-type ptpTorrent struct {
-	Id            string
-	Quality       string
-	Source        string
-	Container     string
-	Codec         string
-	Resolution    string
-	Size          string
-	Scene         bool
-	UploadTime    string
-	Snatched      string
-	Seeders       string
-	Leechers      string
-	ReleasName    string
-	Checked       bool
-	GoldenPopcorn bool
-	Recommended   bool
+type PTPJson struct {
+	Page     string `json:"Page"`
+	Result   string `json:"Result"`
+	Groupid  string `json:"GroupId"`
+	Authkey  string `json:"AuthKey"`
+	Passkey  string `json:"PassKey"`
+	Imdbid   string `json:"ImdbID"`
+	Torrents []struct {
+		Id            string `json:"Id"`
+		Quality       string `json:"Quality"`
+		Source        string `json:"Source"`
+		Container     string `json:"Container"`
+		Codec         string `json:"Codec"`
+		Resolution    string `json:"Resolution"`
+		Size          string `json:"Size"`
+		Scene         bool   `json:"Scene"`
+		Uploadtime    string `json:"UploadTime"`
+		Snatched      string `json:"Snatched"`
+		Seeders       string `json:"Seeders"`
+		Leechers      string `json:"Leechers"`
+		Releasname    string `json:"ReleasName"`
+		Checked       bool   `json:"Checked"`
+		Goldenpopcorn bool   `json:"GoldenPopcorn"`
+		Recommended   bool   `json:"Recommended"`
+	} `json:"Torrents"`
 }
 
 func NewPTPSearch(username, password, passkey, movie_source, movie_resolution string) PTPSearch {
@@ -144,12 +142,12 @@ func (p *PTPSearch) Get(imdbID string) ([]byte, error) {
 		return contents, nil
 	}
 
-	var default_response ptpJSON
+	var default_response PTPJson
 	if err := json.Unmarshal(contents, &default_response); err != nil {
 		return nil, err
 	}
 
-	var rank ptpJSON
+	var rank PTPJson
 	if err := json.Unmarshal(contents, &rank); err != nil {
 		return nil, err
 	}
@@ -164,8 +162,8 @@ func (p *PTPSearch) Get(imdbID string) ([]byte, error) {
 // Determine recommended torrent to download.
 // Very simple/broken algorithm at this point.
 
-func (p *PTPSearch) Recommend(default_response, rank *ptpJSON) {
-	// re-order rank (type ptpJSON) by most snatched
+func (p *PTPSearch) Recommend(default_response, rank *PTPJson) {
+	// re-order rank (type PTPJson) by most snatched
 
 	for i := 0; i < len(rank.Torrents); i++ {
 		max, _ := strconv.Atoi(rank.Torrents[i].Snatched)
