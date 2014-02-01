@@ -33,18 +33,23 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 var s JSONSettings
+var Cachedir string
 var cache Cache
 var ptp_search PTPSearch
 
 func init() {
 	s, err := NewJSONSettings()
+	Cachedir = s.Cachedir
 	if err != nil {
 		panic("Your settings.json file is not configured properly.")
 	}
 	ptp_search = NewPTPSearch(s.PTP.Username, s.PTP.Password,
 		s.PTP.Passkey, s.PTP.Settings.MovieSource,
 		s.PTP.Settings.MovieResolution)
-	cache = NewImageCache(s.CacheDir)
+	cache = NewImageCache(Cachedir)
+	if err := ptp_search.Login(); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -56,6 +61,7 @@ func main() {
 	r.Handle("/", appHandler(index_view))
 	r.Handle("/movies", appHandler(movies_view))
 	r.Handle("/ptp_search", appHandler(ptp_search_view))
+	r.Handle("/ptp_get", appHandler(ptp_get_view))
 	r.Handle("/image", appHandler(image_view))
 
 	// serve static files
@@ -86,7 +92,8 @@ func jsonResult(s string) string {
 
 func ptp_search_view(w http.ResponseWriter, r *http.Request) *appError {
 	w.Header().Set("Content-Type", "application/json")
-	imdbID, err := checkQuery("imdbID", r)
+	query, err := checkQuery(r)
+	imdbID := query["imdbID"][0]
 	if err != nil {
 		return &appError{err, jsonResult("No URL argument passed.")}
 	}
@@ -103,10 +110,26 @@ func ptp_search_view(w http.ResponseWriter, r *http.Request) *appError {
 	return nil
 }
 
-func image_view(w http.ResponseWriter, r *http.Request) *appError {
-	url, err := checkQuery("url", r)
+func ptp_get_view(w http.ResponseWriter, r *http.Request) *appError {
+	w.Header().Set("Content-Type", "application/json")
+	query, err := checkQuery(r)
 	if err != nil {
-		return &appError{err, jsonResult("No URL argument passed.")}
+		return &appError{err, jsonResult("No URL arguments passed.")}
+	}
+	var ptp_get PTPGet
+	ptp_get = NewPTPGet(ptp_search.Cookiejar, Cachedir, query["id"][0], query["authkey"][0], 
+		query["passkey"][0])
+	if err := ptp_get.Download(); err != nil {
+		return &appError{err, jsonResult("Could not download torrent.")}
+	}
+	return nil
+}
+
+func image_view(w http.ResponseWriter, r *http.Request) *appError {
+	query, err := checkQuery(r)
+	url := query["url"][0]
+	if err != nil {
+		return &appError{err, jsonResult("No URL arguments passed.")}
 	}
 	if i, err := cache.Get(url); err != nil {
 		return &appError{err, jsonResult("Could not cache image.")}
@@ -129,14 +152,14 @@ func viewTemplate(filename string, w http.ResponseWriter) *appError {
 	return nil
 }
 
-func checkQuery(field string, r *http.Request) (string, error) {
+func checkQuery(r *http.Request) (map[string][]string, error) {
 	if err := r.ParseForm(); err != nil {
-		return "", err
+		return nil, err
 	}
-	if len(r.Form[field]) == 0 {
-		return "", errors.New("No URL argument passed.")
+	if len(r.Form) == 0 {
+		return nil, errors.New("No URL arguments passed.")
 	}
-	query := r.Form[field][0]
+	query := r.Form
 	return query, nil
 }
 
@@ -145,7 +168,7 @@ func watch() {
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
 	<-c
-	if err := os.RemoveAll(s.CacheDir); err != nil {
+	if err := os.RemoveAll(Cachedir); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Println("Successfully closed.")

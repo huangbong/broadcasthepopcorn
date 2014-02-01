@@ -11,15 +11,18 @@ $(document).ready(function() {
         var $this = $(this);
         clear();
         if (/\S/.test($this.val())) {
-        thread = setTimeout(function() {
-            getSearch($this.val())
-        }, 600);
-    }
+            thread = setTimeout(function() {
+                getSearch($this.val())
+            }, 600);
+        }
     });
 
     function getSearch(t) {
         $.ajax({
-            url: "http://www.omdbapi.com/?s=" + t,
+            url: "http://www.omdbapi.com",
+            data: {
+                s: t
+            },
             datatype: "json",
             success: function(data) {
                 showResults($.parseJSON(data))
@@ -80,7 +83,10 @@ $(document).ready(function() {
 
     function getMovie(imdbID) {
         $.ajax({
-            url: "http://www.omdbapi.com/?i=" + imdbID,
+            url: "http://www.omdbapi.com",
+            data: {
+                i: imdbID
+            },
             datatype: "json",
             success: function(data) {
                 showMovie($.parseJSON(data))
@@ -110,7 +116,10 @@ $(document).ready(function() {
 
     function getDownload(data) {
         $.ajax({
-            url: "ptp_search?imdbID=" + imdbID,
+            url: "ptp_search",
+            data: {
+                imdbID: data
+            },
             datatype: "json",
             success: function(data) {
                 showDownload(data);
@@ -179,12 +188,12 @@ $(document).ready(function() {
             }
             r[++j] = '</table>';
             $('#download').html(r.join(''));
-            showDownloadButton();
+            showDownloadButton(data['AuthKey'], data['PassKey']);
 
             $('tr').click(function() {
                 $('tr.recommended').removeClass('recommended');
                 $(this).addClass('recommended');
-                showDownloadButton();
+                showDownloadButton(data['AuthKey'], data['PassKey']);
             });
 
         } else {
@@ -192,14 +201,31 @@ $(document).ready(function() {
         }
     }
 
-    function showDownloadButton() {
+    function getTorrent(ptpID, authkey, passkey) {
+        $.ajax({
+            url: "ptp_get",
+            data: {
+                id: ptpID,
+                authkey: authkey,
+                passkey: passkey
+            },
+            datatype: "json",
+            success: function(data) {
+                showDownload(data);
+            }
+        })
+    }
+
+    function showDownloadButton(authkey, passkey) {
         $('#download_button button').attr("disabled", false);
         $('#download_button button').text('Download');
         $('#download_button').show();
         $('#download_button button').click(function() {
-            console.log($('.recommended .id').text());
             $('#download_button button').attr("disabled", true);
             $('#download_button button').text('Adding download ' + $('.recommended .id').text() + '...');
+            ptpID = $('.recommended .id').text();
+            getTorrent(ptpID, authkey, passkey);
         });
     }
+
 });

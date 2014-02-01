@@ -12,7 +12,7 @@ import (
 )
 
 type JSONSettings struct {
-	CacheDir string `json:"cache_dir"`
+	Cachedir string `json:"cache_dir"`
 	Database string `json:"database"`
 	PTP      struct {
 		Username string `json:"username"`
