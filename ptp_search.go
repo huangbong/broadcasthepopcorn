@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	ptp_endpoint = "http://passthepopcorn.me"
+	ptp_endpoint     = "http://passthepopcorn.me"
 	ptp_endpoint_tls = "https://tls.passthepopcorn.me"
 )
 
@@ -59,7 +59,7 @@ type PTPJson struct {
 	} `json:"Torrents"`
 }
 
-func NewPTPSearch(username, password, passkey, movie_source, 
+func NewPTPSearch(username, password, passkey, movie_source,
 	movie_resolution string) PTPSearch {
 	ptp_search := PTPSearch{
 		username:         username,

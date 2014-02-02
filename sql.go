@@ -6,15 +6,15 @@
 package main
 
 import (
-	"os"
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"os"
 )
 
 func NewDatabase(filename string) error {
 	if result, _ := exists(Cachedir); result == false {
-		os.MkdirAll(Cachedir + "/imdb/", 0777)
-		os.MkdirAll(Cachedir + "/ptp/", 0777)
+		os.MkdirAll(Cachedir+"/imdb/", 0777)
+		os.MkdirAll(Cachedir+"/ptp/", 0777)
 	}
 
 	dbpath := Cachedir + "/" + filename

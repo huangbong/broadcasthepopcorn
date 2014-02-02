@@ -17,12 +17,12 @@ type Cache interface {
 }
 
 type ImageCache struct {
-	urls      map[string]string
+	urls map[string]string
 }
 
 func NewImageCache() ImageCache {
 	i := ImageCache{
-		urls:      make(map[string]string),
+		urls: make(map[string]string),
 	}
 	return i
 }
@@ -54,7 +54,7 @@ func (i ImageCache) cacheImage(url string) ([]byte, error) {
 	}
 	m := resize.Resize(160, 238, Image, resize.Lanczos3)
 
-	out, err := ioutil.TempFile(Cachedir + "/imdb/", "imdb_")
+	out, err := ioutil.TempFile(Cachedir+"/imdb/", "imdb_")
 	if err != nil {
 		return nil, err
 	}

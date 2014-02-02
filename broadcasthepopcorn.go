@@ -123,11 +123,11 @@ func ptp_get_view(w http.ResponseWriter, r *http.Request) *appError {
 		return &appError{err, jsonResult("No URL arguments passed.")}
 	}
 	var ptp_get PTPGet
-	ptp_get = NewPTPGet(ptp_search.Cookiejar, query["id"][0], query["authkey"][0], 
-		query["passkey"][0], query["title"][0], query["year"][0], 
-		query["source"][0], query["resolution"][0], query["codec"][0], 
+	ptp_get = NewPTPGet(ptp_search.Cookiejar, query["id"][0], query["authkey"][0],
+		query["passkey"][0], query["title"][0], query["year"][0],
+		query["source"][0], query["resolution"][0], query["codec"][0],
 		query["container"][0])
-	result, err := ptp_get.Download(); 
+	result, err := ptp_get.Download()
 	if err != nil {
 		return &appError{err, jsonResult("Could not download torrent.")}
 	}

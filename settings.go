@@ -12,12 +12,12 @@ import (
 )
 
 type JSONSettings struct {
-	Cachedir string `json:"cache_dir"`
-	Database string `json:"database"`
-	Torrentwatch string `json:"torrent_watch"`
+	Cachedir        string `json:"cache_dir"`
+	Database        string `json:"database"`
+	Torrentwatch    string `json:"torrent_watch"`
 	Torrentdownload string `json:"torrent_download"`
-	Torrentdst string `json:"torrent_dst"`
-	PTP      struct {
+	Torrentdst      string `json:"torrent_dst"`
+	PTP             struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 		Passkey  string `json:"passkey"`
