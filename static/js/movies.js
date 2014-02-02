@@ -102,7 +102,7 @@ $(document).ready(function() {
         } else {
             $('.movie #poster').attr('src', 'img/no_poster.gif');
         }
-        $('.movie #year').html('(' + data['Year'] + ')');
+        $('.movie #year').html(data['Year']);
         $('.movie #rating').html(data['Rated']);
         $('.movie #release').html(data['Released']);
         $('.movie #runtime').html(data['Runtime']);
@@ -140,7 +140,7 @@ $(document).ready(function() {
         if (data['Result'] == "OK") {
             var r = new Array(), j = -1;
             r[++j] = '<table>';
-            r[++j] = '<tr><th>ID</th><th>Torrents</th><th>Size</th><th>Snatched</th> \
+            r[++j] = '<tr><th>ID</th><th>ptpID</th><th>Torrents</th><th>Size</th><th>Snatched</th> \
             <th>Seeders</th><th>Leechers</th></tr>';
             var quality;
             for (var key=0, size=data['Torrents'].length; key < size; key++) {
@@ -160,6 +160,8 @@ $(document).ready(function() {
                     }
                 }
                 r[++j] = '<td class="id">';
+                r[++j] = key;
+                r[++j] = '<td class="ptpid">';
                 r[++j] = data['Torrents'][key]['Id'];
                 r[++j] = '</td><td class="torrents">';
                 r[++j] = data['Torrents'][key]['Codec'];
@@ -188,12 +190,12 @@ $(document).ready(function() {
             }
             r[++j] = '</table>';
             $('#download').html(r.join(''));
-            showDownloadButton(data['AuthKey'], data['PassKey']);
+            showDownloadButton(data);
 
             $('tr').click(function() {
                 $('tr.recommended').removeClass('recommended');
                 $(this).addClass('recommended');
-                showDownloadButton(data['AuthKey'], data['PassKey']);
+                showDownloadButton(data);
             });
 
         } else {
@@ -201,30 +203,44 @@ $(document).ready(function() {
         }
     }
 
-    function getTorrent(ptpID, authkey, passkey) {
+    function getTorrent(ptpID, authkey, passkey, title, source, resolution, codec, container) {
         $.ajax({
             url: "ptp_get",
             data: {
                 id: ptpID,
                 authkey: authkey,
-                passkey: passkey
+                passkey: passkey,
+                title: title,
+                year: year,
+                source: source,
+                resolution: resolution,
+                codec: codec,
+                container: container
             },
             datatype: "json",
-            success: function(data) {
-                showDownload(data);
+            success: function() {
+                window.location.replace("movies?success=true");
             }
         })
     }
 
-    function showDownloadButton(authkey, passkey) {
+    function showDownloadButton(data) {
         $('#download_button button').attr("disabled", false);
         $('#download_button button').text('Download');
         $('#download_button').show();
         $('#download_button button').click(function() {
             $('#download_button button').attr("disabled", true);
-            $('#download_button button').text('Adding download ' + $('.recommended .id').text() + '...');
-            ptpID = $('.recommended .id').text();
-            getTorrent(ptpID, authkey, passkey);
+            $('#download_button button').text('Adding download ' + $('.recommended .ptpid').text() + '...');
+            key = $('.recommended .id').text();
+            ptpID = $('.recommended .ptpid').text();
+            title = $('.movie #title').text();
+            year = $('.movie #year').text();
+            source = data['Torrents'][key]['Source'];
+            resolution = data['Torrents'][key]['Resolution'];
+            codec = data['Torrents'][key]['Codec'];
+            container = data['Torrents'][key]['Container'];
+            getTorrent(ptpID, data['AuthKey'], data['PassKey'], title,
+                source, resolution, codec, container);
         });
     }
 

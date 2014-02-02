@@ -12,9 +12,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type appError struct {
@@ -34,28 +31,37 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var s JSONSettings
 var Cachedir string
+var Database string
+var Torrentwatch string
+var Torrentdownload string
+var Torrentdst string
 var cache Cache
 var ptp_search PTPSearch
 
 func init() {
 	s, err := NewJSONSettings()
-	Cachedir = s.Cachedir
 	if err != nil {
 		panic("Your settings.json file is not configured properly.")
 	}
+	Cachedir = s.Cachedir
+	Database = s.Database
+	Torrentwatch = s.Torrentwatch
+	Torrentdownload = s.Torrentdownload
+	Torrentdst = s.Torrentdst
+	cache = NewImageCache()
+	if err := NewDatabase(Database); err != nil {
+		panic(err)
+	}
+	go Renamer()
 	ptp_search = NewPTPSearch(s.PTP.Username, s.PTP.Password,
 		s.PTP.Passkey, s.PTP.Settings.MovieSource,
 		s.PTP.Settings.MovieResolution)
-	cache = NewImageCache(Cachedir)
 	if err := ptp_search.Login(); err != nil {
 		panic(err)
 	}
 }
 
 func main() {
-	// watch for SIGTERM
-	go watch()
-
 	// route dynamic URLs
 	r := mux.NewRouter()
 	r.Handle("/", appHandler(index_view))
@@ -78,11 +84,11 @@ func main() {
 }
 
 func index_view(w http.ResponseWriter, r *http.Request) *appError {
-	return viewTemplate("index.html", w)
+	return viewTemplate("index.html", w, nil)
 }
 
 func movies_view(w http.ResponseWriter, r *http.Request) *appError {
-	return viewTemplate("movies.html", w)
+	return viewTemplate("movies.html", w, nil)
 }
 
 func jsonResult(s string) string {
@@ -117,11 +123,15 @@ func ptp_get_view(w http.ResponseWriter, r *http.Request) *appError {
 		return &appError{err, jsonResult("No URL arguments passed.")}
 	}
 	var ptp_get PTPGet
-	ptp_get = NewPTPGet(ptp_search.Cookiejar, Cachedir, query["id"][0], query["authkey"][0], 
-		query["passkey"][0])
-	if err := ptp_get.Download(); err != nil {
+	ptp_get = NewPTPGet(ptp_search.Cookiejar, query["id"][0], query["authkey"][0], 
+		query["passkey"][0], query["title"][0], query["year"][0], 
+		query["source"][0], query["resolution"][0], query["codec"][0], 
+		query["container"][0])
+	result, err := ptp_get.Download(); 
+	if err != nil {
 		return &appError{err, jsonResult("Could not download torrent.")}
 	}
+	w.Write(result)
 	return nil
 }
 
@@ -139,14 +149,14 @@ func image_view(w http.ResponseWriter, r *http.Request) *appError {
 	return nil
 }
 
-func viewTemplate(filename string, w http.ResponseWriter) *appError {
+func viewTemplate(filename string, w http.ResponseWriter, data interface{}) *appError {
 	t := template.New(filename)
 	parse, err := t.ParseGlob("templates/*.html")
 	if err != nil {
 		return &appError{err, jsonResult("Template files not found.")}
 	}
 	t = template.Must(parse, err)
-	if err := t.Execute(w, nil); err != nil {
+	if err := t.Execute(w, data); err != nil {
 		return &appError{err, jsonResult("Could not load templates.")}
 	}
 	return nil
@@ -161,17 +171,4 @@ func checkQuery(r *http.Request) (map[string][]string, error) {
 	}
 	query := r.Form
 	return query, nil
-}
-
-func watch() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, syscall.SIGTERM)
-	<-c
-	if err := os.RemoveAll(Cachedir); err != nil {
-		log.Fatal(err)
-	} else {
-		log.Println("Successfully closed.")
-		os.Exit(0)
-	}
 }

@@ -10,7 +10,6 @@ import (
 	"image/jpeg"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 type Cache interface {
@@ -18,17 +17,12 @@ type Cache interface {
 }
 
 type ImageCache struct {
-	cache_dir string
 	urls      map[string]string
 }
 
-func NewImageCache(cache_dir string) ImageCache {
+func NewImageCache() ImageCache {
 	i := ImageCache{
-		cache_dir: cache_dir,
 		urls:      make(map[string]string),
-	}
-	if result, _ := exists(cache_dir); result == false {
-		os.Mkdir(cache_dir, 0777)
 	}
 	return i
 }
@@ -60,7 +54,7 @@ func (i ImageCache) cacheImage(url string) ([]byte, error) {
 	}
 	m := resize.Resize(160, 238, Image, resize.Lanczos3)
 
-	out, err := ioutil.TempFile(i.cache_dir, "imdb_")
+	out, err := ioutil.TempFile(Cachedir + "/imdb/", "imdb_")
 	if err != nil {
 		return nil, err
 	}
@@ -71,15 +65,4 @@ func (i ImageCache) cacheImage(url string) ([]byte, error) {
 	i.urls[url] = out.Name()
 
 	return i.getCachedImage(i.urls[url])
-}
-
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }

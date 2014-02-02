@@ -1,6 +1,9 @@
 {
     "cache_dir": "_cache",
-    "database": "broadcasthepopcorn.sql",
+    "database": "broadcasthepopcorn.db",
+    "torrent_watch": "",
+    "torrent_download": "",
+    "torrent_dst": "",
     "ptp":
     {
         "username": "",
