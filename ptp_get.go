@@ -100,9 +100,6 @@ func (p *PTPGet) Parse(torrentname string) error {
 	case 0:
 		filename = metaInfo.Info.Name
 		filelength = metaInfo.Info.Length
-	case 1:
-		filename = metaInfo.Info.Files[0].Path[0]
-		filelength = metaInfo.Info.Files[0].Length
 	default:
 		var largest int
 		largest = 0
@@ -111,7 +108,7 @@ func (p *PTPGet) Parse(torrentname string) error {
 				largest = i
 			}
 		}
-		filename = metaInfo.Info.Name + "/" + metaInfo.Info.Files[largest].Path[0]
+		filename = metaInfo.Info.Name + "/" + strings.TrimSpace(metaInfo.Info.Files[largest].Path[0])
 		filelength = metaInfo.Info.Files[largest].Length
 	}
 
