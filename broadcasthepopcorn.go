@@ -80,7 +80,7 @@ func main() {
 	http.Handle("/", r)
 
 	// run HTTP server
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":12345", nil)
 }
 
 func index_view(w http.ResponseWriter, r *http.Request) *appError {
